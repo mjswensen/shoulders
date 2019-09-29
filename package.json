@@ -1,0 +1,19 @@
+{
+  "name": "shoulders",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "mjswensen",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "ink": "^2.4.0",
+    "react": "^16.10.0"
+  },
+  "devDependencies": {
+    "@types/node": "^12.7.8",
+    "@types/react": "^16.9.3",
+    "typescript": "^3.6.3"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "outDir": "dist",
+    "jsx": "react",
+    "esModuleInterop": true,
+    "module": "CommonJS",
+    "target": "es2019",
+    "strict": true
+  },
+  "files": [
+    "src/index.ts",
+    "src/ui.tsx"
+  ]
+}
