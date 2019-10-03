@@ -1,26 +1,13 @@
 {
   "name": "shoulders",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "cli.js",
   "author": "mjswensen",
   "license": "MIT",
-  "scripts": {
-    "build": "tsc",
-    "watch": "tsc --watch"
-  },
   "dependencies": {
+    "chalk": "^2.4.2",
     "globby": "^10.0.1",
     "hosted-git-info": "^3.0.0",
-    "ink": "^2.4.0",
-    "node-fetch": "^2.6.0",
-    "numeral": "^2.0.6",
-    "react": "^16.10.0"
-  },
-  "devDependencies": {
-    "@types/node": "^12.7.8",
-    "@types/node-fetch": "^2.5.2",
-    "@types/numeral": "^0.0.26",
-    "@types/react": "^16.9.3",
-    "typescript": "^3.6.3"
+    "node-fetch": "^2.6.0"
   }
 }
