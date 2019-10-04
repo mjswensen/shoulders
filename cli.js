@@ -7,7 +7,8 @@ const chalk = require('chalk');
 
 // TODO: add indication if there are more than 15 issues
 // TODO: add support for access token to increase rate limit
-//   - https://github.com/settings/tokens/new
+// TODO: add different renderers. Add a markdown renderer,
+//   JSON renderer, and this human readable one as the default
 
 async function* packageIssues(paths, count = 15) {
   let rateLimitExceeded = false;
@@ -84,20 +85,32 @@ function labelList(labels) {
   );
   console.log('Loading issues...');
   for await (const p of packageIssues(packageJsonLocations)) {
-    const markdownName = `\`${p.name}\``;
-    console.log(`\n\n${chalk.red(markdownName)}`);
-    console.log(`${chalk.red(markdownName.replace(/./g, '='))}\n`);
     if (p.rateLimitExceeded) {
-      console.log('_GitHub API rate limit exceeded._');
+      console.log(chalk.yellow('GitHub API rate limit exceeded.'));
+      if (!process.env.GITHUB_TOKEN) {
+        console.log(
+          `To see more output, create a personal API access token with the ${chalk.green(
+            'public_repo',
+          )} scope at ${chalk.cyan(
+            'https://github.com/settings/tokens/new',
+          )}, and re-run shoulders with your token set in the ${chalk.bold(
+            '$GITHUB_TOKEN',
+          )} environment variable:`,
+        );
+        console.log(
+          chalk.gray(`\n  $ GITHUB_TOKEN='<your token>' npx shoulders\n`),
+        );
+      }
+      break;
     } else {
+      console.log(`\n${chalk.red(p.name)}`);
       if (p.issues && p.issues.length) {
-        console.log('Open issues:\n');
         for (const issue of p.issues) {
-          console.log(`  - [${issue.title}](${chalk.cyan(issue.html_url)})`);
+          console.log(`- ${issue.title} ( ${chalk.cyan(issue.html_url)} )`);
           if (issue.labels && issue.labels.length) {
             console.log(
-              `    ${labelList(
-                issue.labels.map(({ name }) => chalk.blue(`*${name}*`)),
+              `  ${labelList(
+                issue.labels.map(({ name }) => chalk.blue(name)),
               )}`,
             );
           }
@@ -106,9 +119,7 @@ function labelList(labels) {
         console.log(chalk.green('No open issues!'));
       }
       if (p.info) {
-        console.log(
-          `\n[${markdownName} issues page](${chalk.cyan(p.info.bugs())})`,
-        );
+        console.log(chalk.cyan(p.info.bugs()));
       }
     }
   }
