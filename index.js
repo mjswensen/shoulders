@@ -100,11 +100,11 @@ function labelList(labels) {
       console.log(chalk.yellow('GitHub API rate limit exceeded.'));
       if (!process.env.GITHUB_TOKEN) {
         console.log(
-          `To see more output, create a personal API access token with the ${chalk.green(
+          `To increase the limit, create a personal API access token with the ${chalk.green(
             'public_repo',
           )} scope at ${chalk.cyan(
             'https://github.com/settings/tokens/new',
-          )}, and re-run shoulders with your token set in the ${chalk.bold(
+          )} and re-run shoulders with your token set in the ${chalk.bold(
             '$GITHUB_TOKEN',
           )} environment variable:`,
         );
