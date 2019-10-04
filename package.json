@@ -1,7 +1,8 @@
 {
   "name": "shoulders",
   "version": "1.0.0",
-  "main": "cli.js",
+  "main": "index.js",
+  "bin": "cli.js",
   "author": "mjswensen",
   "license": "MIT",
   "dependencies": {
