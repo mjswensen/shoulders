@@ -10,38 +10,50 @@ const chalk = require('chalk');
 // TODO: add different renderers. Add a markdown renderer,
 //   JSON renderer, and this human readable one as the default
 
-async function* packageIssues(paths, count = 15) {
+const ISSUE_COUNT = 15;
+const MAX_CONCURRENT_REQUESTS = 10;
+
+function chunksOfSize(arr, size) {
+  return arr.reduce((chunks, el, i) => {
+    const chunkIdx = Math.floor(i / size);
+    if (!chunks[chunkIdx]) {
+      chunks[chunkIdx] = [];
+    }
+    chunks[chunkIdx].push(el);
+    return chunks;
+  }, Array(Math.ceil(arr.length / size)));
+}
+
+async function* loadIssues(paths) {
   let rateLimitExceeded = false;
-  for (const path of paths) {
-    const json = require(path);
-    const { name } = json;
-    if (json.repository) {
-      const info = fromUrl(json.repository.url || json.repository);
-      if (info && info.type === 'github' && !rateLimitExceeded) {
-        try {
-          const res = await fetch(
-            `https://api.github.com/repos/${info.user}/${info.project}/issues?per_page=${count}`,
-          );
-          if (res.ok) {
-            const issues = await res.json();
-            yield { name, rateLimitExceeded, info, issues };
-          } else {
-            if (
-              res.status === 403 &&
-              res.headers.get('X-RateLimit-Remaining') === '0'
-            ) {
-              rateLimitExceeded = true;
-            }
-            throw new Error(res.statusText);
-          }
-        } catch {
-          yield { name, rateLimitExceeded, info };
-        }
-      } else {
-        yield { name, rateLimitExceeded, info };
+  for (const chunk of chunksOfSize(paths, MAX_CONCURRENT_REQUESTS)) {
+    const promises = chunk.map(async path => {
+      const json = require(path);
+      const { name, repository } = json;
+      if (!repository) {
+        return { name, rateLimitExceeded };
       }
-    } else {
-      yield { name, rateLimitExceeded };
+      const info = fromUrl(repository.url || repository);
+      if (!info || info.type !== 'github' || rateLimitExceeded) {
+        return { name, rateLimitExceeded, info };
+      }
+      const res = await fetch(
+        `https://api.github.com/repos/${info.user}/${info.project}/issues?per_page=${ISSUE_COUNT}`,
+      );
+      if (!res.ok) {
+        if (
+          res.status === 403 &&
+          res.headers.get('X-RateLimit-Remaining') === '0'
+        ) {
+          rateLimitExceeded = true;
+        }
+        return { name, rateLimitExceeded, info };
+      }
+      const issues = await res.json();
+      return { name, rateLimitExceeded, info, issues };
+    });
+    for (const promise of promises) {
+      yield await promise;
     }
   }
 }
@@ -84,7 +96,7 @@ function labelList(labels) {
     )}.`,
   );
   console.log('Loading issues...');
-  for await (const p of packageIssues(packageJsonLocations)) {
+  for await (const p of loadIssues(packageJsonLocations)) {
     if (p.rateLimitExceeded) {
       console.log(chalk.yellow('GitHub API rate limit exceeded.'));
       if (!process.env.GITHUB_TOKEN) {
