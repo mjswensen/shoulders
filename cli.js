@@ -5,11 +5,6 @@ const fetch = require('node-fetch');
 const { fromUrl } = require('hosted-git-info');
 const chalk = require('chalk');
 
-// TODO: add indication if there are more than 15 issues
-// TODO: add support for access token to increase rate limit
-// TODO: add different renderers. Add a markdown renderer,
-//   JSON renderer, and this human readable one as the default
-
 const ISSUE_COUNT = 15;
 const MAX_CONCURRENT_REQUESTS = 10;
 
@@ -39,6 +34,11 @@ async function* loadIssues(paths) {
       }
       const res = await fetch(
         `https://api.github.com/repos/${info.user}/${info.project}/issues?per_page=${ISSUE_COUNT}`,
+        process.env.GITHUB_TOKEN && {
+          headers: {
+            Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+          },
+        },
       );
       if (!res.ok) {
         if (
@@ -50,7 +50,8 @@ async function* loadIssues(paths) {
         return { name, rateLimitExceeded, info };
       }
       const issues = await res.json();
-      return { name, rateLimitExceeded, info, issues };
+      const hasAdditionalIssues = !!res.headers.get('link');
+      return { name, rateLimitExceeded, info, issues, hasAdditionalIssues };
     });
     for (const promise of promises) {
       yield await promise;
@@ -126,6 +127,11 @@ function labelList(labels) {
               )}`,
             );
           }
+        }
+        if (p.hasAdditionalIssues) {
+          console.log(
+            chalk.gray(`(Showing only the first ${ISSUE_COUNT} issues)`),
+          );
         }
       } else {
         console.log(chalk.green('No open issues!'));
