@@ -9,6 +9,6 @@
     "chalk": "^2.4.2",
     "globby": "^10.0.1",
     "hosted-git-info": "^3.0.0",
-    "node-fetch": "^2.6.0"
+    "node-fetch": "^2.6.1"
   }
 }
