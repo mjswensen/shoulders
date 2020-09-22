@@ -97,7 +97,7 @@ function labelList(labels) {
   console.log('Loading issues...');
   for await (const p of loadIssues(packageJsonLocations)) {
     if (p.rateLimitExceeded) {
-      console.log(chalk.yellow('GitHub API rate limit exceeded.'));
+      console.log(chalk.yellow('\nGitHub API rate limit exceeded.'));
       if (!process.env.GITHUB_TOKEN) {
         console.log(
           `To increase the limit, create a personal API access token with the ${chalk.green(
