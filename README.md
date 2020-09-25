@@ -24,6 +24,22 @@ If your project depends on many packages you will likely run into rate limiting 
 GITHUB_TOKEN='<your token>' npx shoulders
 ```
 
+### Issue Filtering
+
+In addition to listing all open issues, you can optionally include
+a comma-separated list of labels to use. For example, to see only
+issues with the `bug` label:
+
+```sh
+npx shoulders --labels bug
+```
+
+Or to include multiple labels, you can do:
+
+```sh
+npx shoulders --labels="bug,good first issue"
+```
+
 ## Why?
 
 Modern software would not be possible without the mountains of previous work by others—much of it open source—as its foundation. In the spirit of [Hacktoberfest 2019](https://hacktoberfest.digitalocean.com), this simple script makes it a little bit easier to find a way to support the projects that we depend on so heavily.
