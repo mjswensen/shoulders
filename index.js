@@ -145,7 +145,7 @@ function labelList(labels) {
           );
         }
       } else {
-        console.log(chalk.green('No open issues!'));
+        console.log(chalk.green('No issues found.'));
       }
       if (p.info) {
         console.log(chalk.cyan(p.info.bugs()));
