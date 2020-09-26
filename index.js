@@ -2,6 +2,7 @@ const globby = require('globby');
 const fetch = require('node-fetch');
 const { fromUrl } = require('hosted-git-info');
 const chalk = require('chalk');
+const { argv } = require('yargs');
 
 const ISSUE_COUNT = 15;
 const MAX_CONCURRENT_REQUESTS = 10;
@@ -17,10 +18,21 @@ function chunksOfSize(arr, size) {
   }, Array(Math.ceil(arr.length / size)));
 }
 
+function buildUrl(info, labels) {
+  const url = `https://api.github.com/repos/${info.user}/${info.project}/issues?per_page=${ISSUE_COUNT}`;
+  // Allow passing a comma-separated lists of labels
+  if (typeof labels === 'string') {
+    // Remove extra whitespace around commas
+    labels = labels.replace(/\s*,\s*/, ',');
+    return `${url}&labels=${encodeURIComponent(labels)}`;
+  }
+  return url;
+}
+
 async function* loadIssues(paths) {
   let rateLimitExceeded = false;
   for (const chunk of chunksOfSize(paths, MAX_CONCURRENT_REQUESTS)) {
-    const promises = chunk.map(async path => {
+    const promises = chunk.map(async (path) => {
       const json = require(path);
       const { name, repository } = json;
       if (!repository) {
@@ -30,8 +42,9 @@ async function* loadIssues(paths) {
       if (!info || info.type !== 'github' || rateLimitExceeded) {
         return { name, rateLimitExceeded, info };
       }
+      const githubUrl = buildUrl(info, argv.labels);
       const res = await fetch(
-        `https://api.github.com/repos/${info.user}/${info.project}/issues?per_page=${ISSUE_COUNT}`,
+        githubUrl,
         process.env.GITHUB_TOKEN && {
           headers: {
             Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
