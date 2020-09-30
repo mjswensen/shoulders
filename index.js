@@ -34,7 +34,9 @@ async function* loadIssues(paths) {
   for (const chunk of chunksOfSize(paths, MAX_CONCURRENT_REQUESTS)) {
     const promises = chunk.map(async (path) => {
       const json = require(path);
-      const { name, repository } = json;
+      let { name, repository } = json;
+      // Not all package.json files include a `name`, fall back to `path`
+      name = name || path;
       if (!repository) {
         return { name, rateLimitExceeded };
       }
