@@ -3,6 +3,7 @@ const fetch = require('node-fetch');
 const { fromUrl } = require('hosted-git-info');
 const chalk = require('chalk');
 const { argv } = require('yargs');
+const { exec } = require('child_process');
 
 const ISSUE_COUNT = 15;
 const MAX_CONCURRENT_REQUESTS = 10;
@@ -100,58 +101,69 @@ function labelList(labels) {
   }
 }
 
-(async function main() {
-  const packageJsonLocations = await globby('**/node_modules/**/package.json', {
-    absolute: true,
-  });
-  console.log(
-    `Detected ${chalk.blue(packageJsonLocations.length)} ${packagePlural(
-      packageJsonLocations.length,
-    )}.`,
-  );
-  console.log('Loading issues...');
-  for await (const p of loadIssues(packageJsonLocations)) {
-    if (p.rateLimitExceeded) {
-      console.log(chalk.yellow('\nGitHub API rate limit exceeded.'));
-      if (!process.env.GITHUB_TOKEN) {
-        console.log(
-          `To increase the limit, create a personal API access token with the ${chalk.green(
-            'public_repo',
-          )} scope at ${chalk.cyan(
-            'https://github.com/settings/tokens/new',
-          )} and re-run shoulders with your token set in the ${chalk.bold(
-            '$GITHUB_TOKEN',
-          )} environment variable:`,
-        );
-        console.log(
-          chalk.gray(`\n  $ GITHUB_TOKEN='<your token>' npx shoulders\n`),
-        );
-      }
-      break;
-    } else {
-      console.log(`\n${chalk.red(p.name)}`);
-      if (p.issues && p.issues.length) {
-        for (const issue of p.issues) {
-          console.log(`- ${issue.title} ( ${chalk.cyan(issue.html_url)} )`);
-          if (issue.labels && issue.labels.length) {
-            console.log(
-              `  ${labelList(
-                issue.labels.map(({ name }) => chalk.blue(name)),
-              )}`,
-            );
-          }
-        }
-        if (p.hasAdditionalIssues) {
+(function main() {
+  const { depth } = argv;
+  const depthParam = typeof depth === 'number' ? `--depth=${depth}` : '';
+
+  exec(`npm ls --parseable ${depthParam}`, async (err, stdout) => {
+    if (err) {
+      console.error(err);
+      return;
+    }
+
+    const packagePaths = stdout.trim().split('\n');
+    const packageJsonLocations = packagePaths.map(
+      (path) => `${path}/package.json`,
+    );
+    console.log(
+      `Detected ${chalk.blue(packageJsonLocations.length)} ${packagePlural(
+        packageJsonLocations.length,
+      )}.`,
+    );
+    console.log('Loading issues...');
+    for await (const p of loadIssues(packageJsonLocations)) {
+      if (p.rateLimitExceeded) {
+        console.log(chalk.yellow('\nGitHub API rate limit exceeded.'));
+        if (!process.env.GITHUB_TOKEN) {
           console.log(
-            chalk.gray(`(Showing only the first ${ISSUE_COUNT} issues)`),
+            `To increase the limit, create a personal API access token with the ${chalk.green(
+              'public_repo',
+            )} scope at ${chalk.cyan(
+              'https://github.com/settings/tokens/new',
+            )} and re-run shoulders with your token set in the ${chalk.bold(
+              '$GITHUB_TOKEN',
+            )} environment variable:`,
+          );
+          console.log(
+            chalk.gray(`\n  $ GITHUB_TOKEN='<your token>' npx shoulders\n`),
           );
         }
+        break;
       } else {
-        console.log(chalk.green('No issues found.'));
-      }
-      if (p.info) {
-        console.log(chalk.cyan(p.info.bugs()));
+        console.log(`\n${chalk.red(p.name)}`);
+        if (p.issues && p.issues.length) {
+          for (const issue of p.issues) {
+            console.log(`- ${issue.title} ( ${chalk.cyan(issue.html_url)} )`);
+            if (issue.labels && issue.labels.length) {
+              console.log(
+                `  ${labelList(
+                  issue.labels.map(({ name }) => chalk.blue(name)),
+                )}`,
+              );
+            }
+          }
+          if (p.hasAdditionalIssues) {
+            console.log(
+              chalk.gray(`(Showing only the first ${ISSUE_COUNT} issues)`),
+            );
+          }
+        } else {
+          console.log(chalk.green('No issues found.'));
+        }
+        if (p.info) {
+          console.log(chalk.cyan(p.info.bugs()));
+        }
       }
     }
-  }
+  });
 })();
