@@ -1,4 +1,3 @@
-const globby = require('globby');
 const fetch = require('node-fetch');
 const { fromUrl } = require('hosted-git-info');
 const chalk = require('chalk');
