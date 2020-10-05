@@ -23,7 +23,7 @@ function buildUrl(info, labels) {
   // Allow passing a comma-separated lists of labels
   if (typeof labels === 'string') {
     // Remove extra whitespace around commas
-    labels = labels.replace(/\s*,\s*/, ',');
+    labels = labels.replace(/\s*,\s*/g, ',');
     return `${url}&labels=${encodeURIComponent(labels)}`;
   }
   return url;
