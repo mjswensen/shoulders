@@ -40,6 +40,16 @@ Or to include multiple labels, you can do:
 npx shoulders --labels="bug,good first issue"
 ```
 
+### Controlling depth
+
+If you wish to look for issues only `n` levels deep, you can specify
+a depth parameter:
+
+```sh
+# Look for issues in your direct dependencies
+npx shoulders --depth=0
+```
+
 ## Why?
 
 Modern software would not be possible without the mountains of previous work by others—much of it open source—as its foundation. In the spirit of [Hacktoberfest 2019](https://hacktoberfest.digitalocean.com), this simple script makes it a little bit easier to find a way to support the projects that we depend on so heavily.

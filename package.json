@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "chalk": "^4.1.0",
-    "globby": "^11.0.1",
     "hosted-git-info": "^3.0.0",
     "node-fetch": "^2.6.0",
     "yargs": "^16.0.3"
