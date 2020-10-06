@@ -6,6 +6,8 @@ const { exec } = require('child_process');
 
 const ISSUE_COUNT = 15;
 const MAX_CONCURRENT_REQUESTS = 10;
+let startOfFile = false;
+let unsupportedFiletype = false;
 
 function chunksOfSize(arr, size) {
   return arr.reduce((chunks, el, i) => {
@@ -100,6 +102,68 @@ function labelList(labels) {
   }
 }
 
+function toFile(outputType, p) {
+  switch (outputType) {
+    case 'html':
+      if (!startOfFile) {
+        console.log(
+          `
+        <html>
+          <head>
+            <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap" rel="stylesheet">
+            <meta charset="UTF-8">
+          </head>
+        <body>
+          <style>
+            a:link { color: cyan; }
+            body { font-family: 'Roboto', sans-serif; color: #FFFFFF; background-color: rgb(30, 30, 30); }
+          </style>
+          `,
+        );
+      }
+      console.log(`<br><span style="color:red">${p.name}</span></br>`);
+      if (p.issues && p.issues.length) {
+        for (const issue of p.issues) {
+          console.log(
+            `<span style="color:white">- ${issue.title} (<span style="color:black"><a href="${issue.html_url}">${issue.html_url}</a></span>)</br>`,
+          );
+          if (issue.labels && issue.labels.length) {
+            console.log(
+              `  ${labelList(
+                issue.labels.map(
+                  ({ name }) => `<span style="color:blue">${name}</span></br>`,
+                ),
+              )}`,
+            );
+          }
+        }
+        if (p.hasAdditionalIssues) {
+          console.log(
+            `<span style="color:gray">(Showing only the first ${ISSUE_COUNT} issues)</span>`,
+          );
+        }
+      } else {
+        console.log(`<span style="color:green">No issues found.</span>`);
+      }
+      if (p.info) {
+        console.log(
+          `<span style="color:cyan"><a href="${p.info.bugs()}">${p.info.bugs()}</a></span></br>`,
+        );
+      }
+      startOfFile = true;
+      break;
+    default:
+      if (!unsupportedFiletype) {
+        console.log(
+          `Please rerun with a supported output file type. Shoulders does not currently support ${outputType}.`,
+        );
+      }
+      unsupportedFiletype = true;
+      startOfFile = true;
+      break;
+  }
+}
+
 (function main() {
   const { depth } = argv;
   const depthParam = typeof depth === 'number' ? `--depth=${depth}` : '';
@@ -138,6 +202,8 @@ function labelList(labels) {
           );
         }
         break;
+      } else if (argv.format) {
+        toFile(argv.format, p);
       } else {
         console.log(`\n${chalk.red(p.name)}`);
         if (p.issues && p.issues.length) {
@@ -163,6 +229,10 @@ function labelList(labels) {
           console.log(chalk.cyan(p.info.bugs()));
         }
       }
+    }
+    //If the file type is HTML, put </body></html> at the end of the html file.
+    if (argv.format == 'html') {
+      console.log(`</body></html>`);
     }
   });
 })();
