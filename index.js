@@ -14,7 +14,7 @@ const { argv } = require('yargs').options({
   format: {
     description: 'output format',
     type: 'string',
-    choices: ['console', 'html'],
+    choices: ['console', 'html', 'md'],
     default: 'console',
   },
 });
@@ -111,6 +111,8 @@ async function locatePackages(depth) {
 
 function getRenderer(format) {
   switch (format) {
+    case 'md':
+      return require('./render/markdown.js');
     case 'html':
       return require('./render/html.js');
     case 'console':
