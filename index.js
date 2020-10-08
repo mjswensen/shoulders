@@ -1,13 +1,27 @@
 const fetch = require('node-fetch');
 const { fromUrl } = require('hosted-git-info');
-const chalk = require('chalk');
-const { argv } = require('yargs');
+const { argv } = require('yargs').options({
+  labels: {
+    description:
+      'Limit issues to those matching a comma-separated list of labels',
+    type: 'string',
+  },
+  depth: {
+    description:
+      'Limit issues to those from packages <depth> levels deep in the dependency tree',
+    type: 'number',
+  },
+  format: {
+    description: 'output format',
+    type: 'string',
+    choices: ['console', 'html'],
+    default: 'console',
+  },
+});
 const { exec } = require('child_process');
 
 const ISSUE_COUNT = 15;
 const MAX_CONCURRENT_REQUESTS = 10;
-let startOfFile = false;
-let unsupportedFiletype = false;
 
 function chunksOfSize(arr, size) {
   return arr.reduce((chunks, el, i) => {
@@ -24,9 +38,12 @@ function buildUrl(info, labels) {
   const url = `https://api.github.com/repos/${info.user}/${info.project}/issues?per_page=${ISSUE_COUNT}`;
   // Allow passing a comma-separated lists of labels
   if (typeof labels === 'string') {
-    // Remove extra whitespace around commas
-    labels = labels.replace(/\s*,\s*/g, ',');
-    return `${url}&labels=${encodeURIComponent(labels)}`;
+    return `${url}&labels=${encodeURIComponent(
+      labels
+        .split(',')
+        .map((label) => label.trim())
+        .join(','),
+    )}`;
   }
   return url;
 }
@@ -74,165 +91,45 @@ async function* loadIssues(paths) {
   }
 }
 
-function plural(singular, plural, count) {
-  return count === 1 ? singular : plural;
-}
-
-function packagePlural(count) {
-  return plural('package', 'packages', count);
-}
-
-function otherPlural(count) {
-  return plural('other', 'others', count);
-}
-
-function labelList(labels) {
-  switch (labels.length) {
-    case 1:
-      return `Labeled with ${labels[0]}`;
-    case 2:
-      return `Labeled with ${labels[0]} and ${labels[1]}`;
-    case 3:
-      return `Labeled with ${labels[0]}, ${labels[1]}, and ${labels[2]}`;
-    default:
-      const remaining = labels.length - 3;
-      return `Labeled with ${labels[0]}, ${labels[1]}, ${
-        labels[2]
-      }, and ${remaining} ${otherPlural(remaining)}`;
-  }
-}
-
-function toFile(outputType, p) {
-  switch (outputType) {
-    case 'html':
-      if (!startOfFile) {
-        console.log(
-          `
-        <html>
-          <head>
-            <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap" rel="stylesheet">
-            <meta charset="UTF-8">
-          </head>
-        <body>
-          <style>
-            a:link { color: cyan; }
-            body { font-family: 'Roboto', sans-serif; color: #FFFFFF; background-color: rgb(30, 30, 30); }
-          </style>
-          `,
-        );
-      }
-      console.log(`<br><span style="color:red">${p.name}</span></br>`);
-      if (p.issues && p.issues.length) {
-        for (const issue of p.issues) {
-          console.log(
-            `<span style="color:white">- ${issue.title} (<span style="color:black"><a href="${issue.html_url}">${issue.html_url}</a></span>)</br>`,
-          );
-          if (issue.labels && issue.labels.length) {
-            console.log(
-              `  ${labelList(
-                issue.labels.map(
-                  ({ name }) => `<span style="color:blue">${name}</span></br>`,
-                ),
-              )}`,
-            );
-          }
-        }
-        if (p.hasAdditionalIssues) {
-          console.log(
-            `<span style="color:gray">(Showing only the first ${ISSUE_COUNT} issues)</span>`,
-          );
-        }
-      } else {
-        console.log(`<span style="color:green">No issues found.</span>`);
-      }
-      if (p.info) {
-        console.log(
-          `<span style="color:cyan"><a href="${p.info.bugs()}">${p.info.bugs()}</a></span></br>`,
-        );
-      }
-      startOfFile = true;
-      break;
-    default:
-      if (!unsupportedFiletype) {
-        console.log(
-          `Please rerun with a supported output file type. Shoulders does not currently support ${outputType}.`,
-        );
-      }
-      unsupportedFiletype = true;
-      startOfFile = true;
-      break;
-  }
-}
-
-(function main() {
-  const { depth } = argv;
+async function locatePackages(depth) {
   const depthParam = typeof depth === 'number' ? `--depth=${depth}` : '';
-
-  exec(`npm ls --parseable ${depthParam}`, async (err, stdout) => {
-    if (err) {
-      console.error(err);
-      return;
-    }
-
-    const packagePaths = stdout.trim().split('\n');
-    const packageJsonLocations = packagePaths.map(
-      (path) => `${path}/package.json`,
-    );
-    console.log(
-      `Detected ${chalk.blue(packageJsonLocations.length)} ${packagePlural(
-        packageJsonLocations.length,
-      )}.`,
-    );
-    console.log('Loading issues...');
-    for await (const p of loadIssues(packageJsonLocations)) {
-      if (p.rateLimitExceeded) {
-        console.log(chalk.yellow('\nGitHub API rate limit exceeded.'));
-        if (!process.env.GITHUB_TOKEN) {
-          console.log(
-            `To increase the limit, create a personal API access token with the ${chalk.green(
-              'public_repo',
-            )} scope at ${chalk.cyan(
-              'https://github.com/settings/tokens/new',
-            )} and re-run shoulders with your token set in the ${chalk.bold(
-              '$GITHUB_TOKEN',
-            )} environment variable:`,
-          );
-          console.log(
-            chalk.gray(`\n  $ GITHUB_TOKEN='<your token>' npx shoulders\n`),
-          );
-        }
-        break;
-      } else if (argv.format) {
-        toFile(argv.format, p);
+  return await new Promise((resolve, reject) => {
+    exec(`npm ls --parseable ${depthParam}`, (err, stdout) => {
+      if (err) {
+        reject(err);
       } else {
-        console.log(`\n${chalk.red(p.name)}`);
-        if (p.issues && p.issues.length) {
-          for (const issue of p.issues) {
-            console.log(`- ${issue.title} ( ${chalk.cyan(issue.html_url)} )`);
-            if (issue.labels && issue.labels.length) {
-              console.log(
-                `  ${labelList(
-                  issue.labels.map(({ name }) => chalk.blue(name)),
-                )}`,
-              );
-            }
-          }
-          if (p.hasAdditionalIssues) {
-            console.log(
-              chalk.gray(`(Showing only the first ${ISSUE_COUNT} issues)`),
-            );
-          }
-        } else {
-          console.log(chalk.green('No issues found.'));
-        }
-        if (p.info) {
-          console.log(chalk.cyan(p.info.bugs()));
-        }
+        resolve(
+          stdout
+            .trim()
+            .split('\n')
+            .map((path) => `${path}/package.json`),
+        );
       }
-    }
-    //If the file type is HTML, put </body></html> at the end of the html file.
-    if (argv.format == 'html') {
-      console.log(`</body></html>`);
-    }
+    });
   });
+}
+
+function getRenderer(format) {
+  switch (format) {
+    case 'html':
+      return require('./render/html.js');
+    case 'console':
+    default:
+      return require('./render/console.js');
+  }
+}
+
+(async function main() {
+  const renderer = getRenderer(argv.format);
+  const packageJsonLocations = await locatePackages(argv.depth);
+  renderer.renderHeader(packageJsonLocations);
+  for await (const p of loadIssues(packageJsonLocations)) {
+    if (p.rateLimitExceeded) {
+      renderer.renderRateLimitExceeded();
+      break;
+    } else {
+      renderer.renderPackage(p, ISSUE_COUNT);
+    }
+  }
+  renderer.renderFooter();
 })();
