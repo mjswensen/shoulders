@@ -133,7 +133,7 @@ function getRenderer(format) {
       renderer.renderRateLimitExceeded();
       break;
     } else {
-      renderer.renderPackage(p, ISSUE_COUNT);
+      renderer.renderPackage(p);
     }
   }
   renderer.renderFooter();
