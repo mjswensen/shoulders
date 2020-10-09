@@ -81,7 +81,10 @@ async function* loadIssues(paths) {
         }
         return { name, rateLimitExceeded, info };
       }
-      const issues = await res.json();
+      const issuesAndPRs = await res.json();
+      const issues = issuesAndPRs.filter(
+        (issue) => !issue.hasOwnProperty('pull_request'),
+      );
       const hasAdditionalIssues = !!res.headers.get('link');
       return { name, rateLimitExceeded, info, issues, hasAdditionalIssues };
     });
