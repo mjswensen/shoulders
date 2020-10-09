@@ -24,6 +24,14 @@ If your project depends on many packages you will likely run into rate limiting 
 GITHUB_TOKEN='<your token>' npx shoulders
 ```
 
+## Parameters
+
+| Name                          | Type     | Short description                    |
+| ----------------------------- | -------- | ------------------------------------ |
+| [--labels](#issue-filtering)  | `string` | Filter issues by labels              |
+| [--depth](#controlling-depth) | `number` | Look for issues only `n` levels deep |
+| [--format](#output-format)    | `string` | Format the output                    |
+
 ### Issue Filtering
 
 In addition to listing all open issues, you can optionally include
@@ -40,7 +48,7 @@ Or to include multiple labels, you can do:
 npx shoulders --labels="bug,good first issue"
 ```
 
-### Controlling depth
+### Controlling Depth
 
 If you wish to look for issues only `n` levels deep, you can specify
 a depth parameter:
@@ -49,6 +57,22 @@ a depth parameter:
 # Look for issues in your direct dependencies
 npx shoulders --depth=0
 ```
+
+### Output Format
+
+You can format the output by passing a format parameter:
+
+```sh
+npx shoulders --format html
+```
+
+If you'd like to create a new file you can pipe the output like this:
+
+```sh
+npx shoulders --format html > output.html
+```
+
+The available formats are currently `console` (default), `html` and `md` (markdown).
 
 ## Why?
 
