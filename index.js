@@ -98,15 +98,14 @@ async function locatePackages(depth) {
   const depthParam = typeof depth === 'number' ? `--depth=${depth}` : '';
   return await new Promise((resolve, reject) => {
     exec(`npm ls --parseable ${depthParam}`, (err, stdout) => {
-      if (err) {
-        reject(err);
+      const packages = stdout
+        .trim()
+        .split('\n')
+        .map((path) => `${path}/package.json`);
+      if (packages.length) {
+        resolve(packages);
       } else {
-        resolve(
-          stdout
-            .trim()
-            .split('\n')
-            .map((path) => `${path}/package.json`),
-        );
+        reject(new Error('Unable to detect dependencies'));
       }
     });
   });
