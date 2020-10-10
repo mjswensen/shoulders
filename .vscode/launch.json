@@ -9,7 +9,17 @@
       "request": "launch",
       "name": "Run",
       "program": "${workspaceFolder}/index.js",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env",
+      "cwd": "${input:cwd}"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "cwd",
+      "type": "promptString",
+      "description": "cwd of test program",
+      "default": "${workspaceFolder}"
     }
   ]
 }
