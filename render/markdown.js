@@ -21,7 +21,7 @@ function renderRateLimitExceeded() {
   }
 }
 
-function renderPackage(p, maxIssues) {
+function renderPackage(p) {
   if (p.info) {
     console.log(`## [${p.name}](${p.info.bugs()})`);
   } else {
@@ -38,7 +38,7 @@ function renderPackage(p, maxIssues) {
       );
     }
     if (p.hasAdditionalIssues) {
-      console.log(`> Showing only the first ${maxIssues} issues\n`);
+      console.log(`> Showing only the first ${p.issues.length} issues\n`);
     }
   } else {
     console.log('No issues found.');

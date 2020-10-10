@@ -17,7 +17,7 @@ function renderHeader() {
 
 function renderRateLimitExceeded() {}
 
-function renderPackage(p, maxIssues) {
+function renderPackage(p) {
   console.log(`<br><span style="color:red">${p.name}</span></br>`);
   if (p.issues && p.issues.length) {
     for (const issue of p.issues) {
@@ -36,7 +36,7 @@ function renderPackage(p, maxIssues) {
     }
     if (p.hasAdditionalIssues) {
       console.log(
-        `<span style="color:gray">(Showing only the first ${maxIssues} issues)</span>`,
+        `<span style="color:gray">(Showing only the first ${p.issues.length} issues)</span>`,
       );
     }
   } else {

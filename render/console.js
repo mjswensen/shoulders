@@ -29,7 +29,7 @@ function renderRateLimitExceeded() {
   }
 }
 
-function renderPackage(p, maxIssues) {
+function renderPackage(p) {
   console.log(`\n${chalk.red(p.name)}`);
   if (p.issues && p.issues.length) {
     for (const issue of p.issues) {
@@ -41,7 +41,9 @@ function renderPackage(p, maxIssues) {
       }
     }
     if (p.hasAdditionalIssues) {
-      console.log(chalk.gray(`(Showing only the first ${maxIssues} issues)`));
+      console.log(
+        chalk.gray(`(Showing only the first ${p.issues.length} issues)`),
+      );
     }
   } else {
     console.log(chalk.green('No issues found.'));
