@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "chalk": "^4.1.0",
-    "hosted-git-info": "^3.0.0",
+    "hosted-git-info": "^3.0.8",
     "node-fetch": "^2.6.0",
     "yargs": "^16.0.3"
   }
